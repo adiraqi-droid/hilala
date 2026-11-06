@@ -74,6 +74,9 @@
   <div class="row">
     <button class="b" id="micBtn" type="button">🎤 Écouter</button>
   </div>
+  <div class="row" id="installRow" style="margin-top:10px; display:none">
+    <button class="b sec" id="installBtn" type="button">📲 Installer sur l'écran d'accueil</button>
+  </div>
   <div id="status"></div>
   <div id="interim" class="ar"></div>
   <div class="row" style="margin-top:8px">
@@ -255,6 +258,11 @@
 
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Bouton d'installation (Chrome Android le propose quand l'appli est installable)
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('installRow').style.display = 'flex'; });
+  window.addEventListener('appinstalled', () => { $('installRow').style.display = 'none'; status('Appli installée sur l\'écran d\'accueil.', 'ok'); });
+  $('installBtn').onclick = async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $('installRow').style.display = 'none'; };
   if (!SR) status('Reconnaissance vocale indisponible ici. Ouvre la page dans Chrome.', 'err');
 })();
 </script>
