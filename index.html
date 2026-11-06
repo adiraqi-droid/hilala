@@ -207,20 +207,19 @@
 
   function startRec() {
     rec = new SR();
-    rec.lang = S.lang; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
-    session = { seen: 0, prev: '', counted: 0 };
+    // Une phrase par écoute, puis redémarrage automatique (onend).
+    // Le mode continu de Chrome Android renvoie des textes cumulés ou en double, ce qui fausse le comptage.
+    rec.lang = S.lang; rec.continuous = false; rec.interimResults = true; rec.maxAlternatives = 1;
+    session = { done: new Set() };
     re = matcher();
     rec.onresult = ev => {
       let interim = '';
-      for (let i = session.seen; i < ev.results.length; i++) {
+      for (let i = 0; i < ev.results.length; i++) {
         const r = ev.results[i];
         if (!r.isFinal) { interim += r[0].transcript + ' '; continue; }
-        if (i !== session.seen) continue;          // on traite les résultats finaux dans l'ordre
-        let txt = r[0].transcript.trim();
-        // Chrome Android renvoie parfois un texte cumulé : on ne garde que la partie nouvelle.
-        if (session.prev && txt.startsWith(session.prev)) txt = txt.slice(session.prev.length).trim();
-        session.prev = r[0].transcript.trim();
-        session.seen = i + 1;
+        if (session.done.has(i)) continue;          // chaque résultat final n'est compté qu'une fois
+        session.done.add(i);
+        const txt = r[0].transcript.trim();
         const n = countIn(txt, re);
         addLog(txt || '(vide)', n);
         if (n) add(n); else { save(); renderLog(); }
@@ -232,7 +231,7 @@
       else if (e.error === 'network') status('Pas de connexion : la reconnaissance de Chrome a besoin d\'Internet.', 'err');
       else if (e.error !== 'no-speech' && e.error !== 'aborted') status('Erreur : ' + e.error, 'err');
     };
-    rec.onend = () => { $('interim').textContent = ''; if (listening) setTimeout(() => { if (listening) startRec(); }, 200); };
+    rec.onend = () => { $('interim').textContent = ''; if (listening) setTimeout(() => { if (listening) startRec(); }, 50); };
     try { rec.start(); } catch {}
   }
   function start() {
