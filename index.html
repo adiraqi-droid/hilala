@@ -53,9 +53,7 @@
 </head>
 <body>
 <main>
-  <h1>Hilala <small id="total"></small></h1>
-
-  <div class="chips" id="chips"></div>
+  <h1>Hilala <small>objectif 1000</small></h1>
 
   <button id="counterBtn" type="button" aria-label="Ajouter 1">
     <div id="dhikrAr" class="ar"></div>
@@ -89,9 +87,7 @@
 
   <details>
     <summary>Réglages</summary>
-    <label for="target">Objectif par tour</label>
-    <select id="target"><option>33</option><option>99</option><option>100</option><option>1000</option></select>
-    <label for="keys">Mots reconnus pour ce dhikr (séparés par des virgules)</label>
+    <label for="keys">Mots reconnus (séparés par des virgules)</label>
     <textarea id="keys" class="ar" dir="auto"></textarea>
     <div class="hint">Chaque fois qu'un de ces mots apparaît dans ce qui est entendu, le compteur avance de 1. Les espaces et les voyelles (harakat) sont ignorés.</div>
     <label for="lang">Langue de reconnaissance</label>
@@ -102,7 +98,6 @@
       <option value="fr-FR">Français (translittération)</option>
     </select>
     <label><input type="checkbox" id="vib" style="width:auto"> Vibration à chaque compte</label>
-    <div class="row" style="margin-top:10px"><button class="b sec" id="resetAll" type="button">Tout remettre à 0</button></div>
     <div class="hint">Tout est enregistré uniquement sur cet appareil.</div>
   </details>
 </main>
@@ -111,22 +106,21 @@
 (() => {
   const PRESETS = [
     { id:'tahlil',  ar:'لا إله إلا الله', fr:'La ilaha illa Allah', keys:['الا الله','اله الله','illallah','illa allah','ila allah'] },
-    { id:'subhan',  ar:'سبحان الله',       fr:'SubhanAllah',         keys:['سبحان','subhan','soubhan'] },
-    { id:'hamd',    ar:'الحمد لله',        fr:'Alhamdulillah',       keys:['الحمد','hamdulillah','hamdoulillah','hamdou lillah'] },
-    { id:'akbar',   ar:'الله أكبر',        fr:'Allahu akbar',        keys:['اكبر','akbar'] },
-    { id:'istighfar', ar:'أستغفر الله',    fr:'Astaghfirullah',      keys:['استغفر','astaghfir','astarfir'] },
   ];
+  const TARGET = 1000;
   const KEY = 'hilala.v1';
   const $ = id => document.getElementById(id);
 
   // ---------- état ----------
   function fresh() {
     return { cur:'tahlil', lang:'ar-SA', vib:true, log:[],
-      d: Object.fromEntries(PRESETS.map(p => [p.id, { count:0, target:33, keys:p.keys.join(', ') }])) };
+      d: Object.fromEntries(PRESETS.map(p => [p.id, { count:0, target:TARGET, keys:p.keys.join(', ') }])) };
   }
   let S;
   try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch { S = fresh(); }
-  for (const p of PRESETS) if (!S.d[p.id]) S.d[p.id] = { count:0, target:33, keys:p.keys.join(', ') };
+  for (const p of PRESETS) if (!S.d[p.id]) S.d[p.id] = { count:0, target:TARGET, keys:p.keys.join(', ') };
+  S.cur = 'tahlil';
+  S.d.tahlil.target = TARGET;
   const save = () => localStorage.setItem(KEY, JSON.stringify(S));
   const preset = () => PRESETS.find(p => p.id === S.cur);
   const cur = () => S.d[S.cur];
@@ -154,8 +148,6 @@
   const CIRC = 603.19;
   function render() {
     const p = preset(), c = cur();
-    $('chips').innerHTML = PRESETS.map(q =>
-      `<button class="chip ${q.id === S.cur ? 'on' : ''}" data-id="${q.id}"><span class="ar">${q.ar}</span><span class="n">${S.d[q.id].count}</span></button>`).join('');
     $('dhikrAr').textContent = p.ar;
     $('dhikrFr').textContent = p.fr;
     $('count').textContent = c.count;
@@ -163,8 +155,6 @@
     const frac = c.count > 0 && inRound === 0 ? 1 : inRound / t;
     $('arc').setAttribute('stroke-dashoffset', String(CIRC * (1 - frac)));
     $('sub').textContent = `${c.count > 0 && inRound === 0 ? t : inRound} / ${t}` + (rounds ? ` · ${rounds} tour${rounds > 1 ? 's' : ''}` : '');
-    $('total').textContent = 'Total : ' + Object.values(S.d).reduce((a, d) => a + d.count, 0);
-    $('target').value = String(t);
     $('keys').value = c.keys;
     $('lang').value = S.lang;
     $('vib').checked = !!S.vib;
@@ -255,10 +245,7 @@
   $('counterBtn').onclick = () => { addLog('(ajout manuel)', 1); add(1); };
   $('minusBtn').onclick = () => { addLog('(retrait manuel)', -1); add(-1); };
   $('resetBtn').onclick = () => { if (confirm('Remettre ce dhikr à 0 ?')) { cur().count = 0; save(); render(); } };
-  $('resetAll').onclick = () => { if (confirm('Remettre tous les compteurs à 0 ?')) { for (const k in S.d) S.d[k].count = 0; save(); render(); } };
   $('clearLog').onclick = () => { S.log = []; save(); renderLog(); };
-  $('chips').onclick = e => { const b = e.target.closest('.chip'); if (!b) return; S.cur = b.dataset.id; save(); render(); restartIfListening(); };
-  $('target').onchange = e => { cur().target = parseInt(e.target.value, 10) || 33; save(); render(); };
   $('keys').onchange = e => { cur().keys = e.target.value; save(); re = matcher(); };
   $('lang').onchange = e => { S.lang = e.target.value; save(); restartIfListening(); if (listening) status('J\'écoute… (' + S.lang + ')', 'ok'); };
   $('vib').onchange = e => { S.vib = e.target.checked; save(); };
