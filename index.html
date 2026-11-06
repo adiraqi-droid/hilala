@@ -7,6 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Hilala — compteur de dhikr vocal</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root { --bg:#0f1a17; --card:#16251f; --line:#24392f; --txt:#e8f1ec; --mut:#8fa89b; --acc:#3ccf91; --warn:#f0b44c; --err:#ef6b6b; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -251,6 +254,7 @@
   $('vib').onchange = e => { S.vib = e.target.checked; save(); };
 
   render();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   if (!SR) status('Reconnaissance vocale indisponible ici. Ouvre la page dans Chrome.', 'err');
 })();
 </script>
